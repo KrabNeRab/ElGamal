@@ -1,0 +1,60 @@
+import random
+from hashlib import sha256
+from sympy import nextprime  # nextprime для генерации простого числа
+
+
+#генерация ключей
+def generate_keys(bit_length=1024):
+    #простое число
+    p = random.getrandbits(bit_length)
+    p = nextprime(p)  #следующее простое число после случайно сгенерированного
+    #примитивный корень
+    g = random.randint(2, p - 2)
+
+    #секретный ключ
+    x = random.randint(2, p - 2)
+
+    #публичный ключ
+    h = pow(g, x, p)
+
+    return p, g, h, x
+
+
+#шифрование сообщения
+def encrypt(p, g, h, message):
+    #преобразуем сообщение в число
+    m = int.from_bytes(message.encode('utf-8'), 'big')
+
+    #случайное число k
+    k = random.randint(2, p - 2)
+
+    c1 = pow(g, k, p)
+
+    c2 = (m * pow(h, k, p)) % p
+
+    return c1, c2
+
+
+#расшифровка сообщения
+def decrypt(p, x, c1, c2):
+
+    m = (c2 * pow(c1, p - 1 - x, p)) % p
+
+    #обратно в строку, учитывая размер числа
+    message = m.to_bytes((m.bit_length() + 7) // 8, 'big').decode('utf-8', errors='ignore')
+    return message
+
+
+
+if __name__ == "__main__":
+
+    p, g, h, x = generate_keys()
+
+    plaintext = "Павлов Валерий Власьевич ДПИ23-1"
+    print("Открытый текст:", plaintext)
+
+    c1, c2 = encrypt(p, g, h, plaintext)
+    print("Шифрованный текст:", (c1, c2))
+
+    decrypted_message = decrypt(p, x, c1, c2)
+    print("Расшифрованное сообщение:", decrypted_message)
